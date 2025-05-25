@@ -1,6 +1,11 @@
+<p align="center">
+  <img src="./g-naira.png" alt="G-Naira Token Logo" width="300"/>
+</p>
+
 # GNaira Token (gNGN)
 
 **Verified Contract Address:** 0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c
+
 **Etherscan (Sepolia) Link:** [0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c#code](https://sepolia.etherscan.io/address/0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c#code)
 
 ---
