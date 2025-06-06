@@ -5,10 +5,277 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>G-Naira Token Interface</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="shortcut icon" href="g-naira-icon.png" type="image/x-icon">
+     <link rel="shortcut icon" href="g-naira-icon.png" type="image/x-icon">
 </head>
 <body>
-    <div id="addTokenModal" class="modal hidden">
+    <div id="toastContainer" class="toast-container"></div>
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing...</p>
+        </div>
+    </div>
+
+    <div class="particles-container">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container">
+                <img src="g-naira-icon.png" alt="G-Naira Logo" class="logo">
+                <h1>G-Naira Token Interface</h1>
+            </div>
+            <div class="network-badge">
+                <span id="networkStatus">Not Connected</span>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <h2>The Digital Nigerian Naira</h2>
+                <p>Nigeria’s stable digital currency for secure, transparent blockchain transactions on the Ethereum blockchain</p>
+                <button id="connectWallet" class="btn btn-primary btn-glow">Connect Wallet</button>
+            </div>
+            <div class="hero-graphic">
+                <div class="token-circle">
+                    <span class="token-symbol">₦</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Wallet Information -->
+        <section id="walletInfo" class="wallet-info card hidden">
+            <div class="card-header">
+                <h3>Wallet Information</h3>
+                <div class="connection-status connected">
+                    <span class="status-dot"></span>
+                    <span>Connected</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <div class="info-label">Address:</div>
+                    <div class="info-value address-value" id="accountAddress">0x0000...0000</div>
+                </div>
+                <div class="info-row balance-row">
+                    <div class="info-label">Balance:</div>
+                    <div class="info-value balance-value">
+                        <span id="tokenBalance">0</span>
+                        <span class="token-name">gNGN</span>
+                    </div>
+                </div>
+                <div class="wallet-actions">
+                    <button id="refreshBalance" class="btn btn-secondary">
+                        <span class="btn-icon refresh-icon">↻</span>
+                        Refresh
+                    </button>
+                    <button id="addToMetaMask" class="btn btn-success">
+                        <span class="btn-icon wallet-icon">+</span>
+                        Add to MetaMask
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Interface -->
+        <div id="mainInterface" class="main-interface hidden">
+            
+            <!-- Transfer Section -->
+            <section class="card feature-card">
+                <div class="card-header">
+                    <h3>Transfer Tokens</h3>
+                    <div class="card-icon transfer-icon">↗</div>
+                </div>
+                <div class="card-body">
+                    <form id="transferForm">
+                        <div class="form-group">
+                            <label for="transferRecipient">Recipient Address</label>
+                            <input type="text" id="transferRecipient" placeholder="0x..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="transferAmount">Amount (gNGN)</label>
+                            <div class="amount-input-wrapper">
+                                <input type="number" id="transferAmount" step="0.000000000000000001" placeholder="0.0" required>
+                                <span class="currency-suffix">gNGN</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="transferBtn">Send Tokens</button>
+                    </form>
+                </div>
+            </section>
+
+
+            <!-- Transfer From Section -->
+            <!-- <section class="card">
+                <h2>Transfer From</h2>
+                <form id="transferFromForm">
+                    <div class="form-group">
+                        <label for="transferFromOwner">Owner Address:</label>
+                        <input type="text" id="transferFromOwner" placeholder="0x..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferFromSpender">Spender Address:</label>
+                        <input type="text" id="transferFromSpender" placeholder="0x..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferFromAmount">Amount (gNGN):</label>
+                        <input type="number" id="transferFromAmount" step="0.000000000000000001" placeholder="0.0" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send From</button>
+                </form>
+            </section> -->
+
+            <!-- Approve Section -->
+            <!-- <section class="card">
+                <h2>Approve Allowance</h2>
+                <form id="approveForm">
+                    <div class="form-group">
+                        <label for="approveSpender">Spender Address:</label>
+                        <input type="text" id="approveSpender" placeholder="0x..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="approveAmount">Amount (gNGN):</label>
+                        <input type="number" id="approveAmount" step="0.000000000000000001" placeholder="0.0" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Approve</button>
+                </form>
+            </section> -->
+
+
+            <!-- Governor Only Sections -->
+            <div id="governorSections" class="governor-sections hidden">
+                
+                <!-- Mint Section -->
+                <section class="card feature-card">
+                    <div class="card-header">
+                        <h3>Mint Tokens</h3>
+                        <div class="card-tag governor-tag">Governor Only</div>
+                    </div>
+                    <div class="card-body">
+                        <form id="mintForm">
+                            <div class="form-group">
+                                <label for="mintTo">Recipient Address</label>
+                                <input type="text" id="mintTo" placeholder="0x..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="mintAmount">Amount (gNGN)</label>
+                                <div class="amount-input-wrapper">
+                                    <input type="number" id="mintAmount" step="0.000000000000000001" placeholder="0.0" required>
+                                    <span class="currency-suffix">gNGN</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-block">Mint Tokens</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Burn Section -->
+                <section class="card feature-card">
+                    <div class="card-header">
+                        <h3>Burn Tokens</h3>
+                        <div class="card-tag governor-tag">Governor Only</div>
+                    </div>
+                    <div class="card-body">
+                        <form id="burnForm">
+                            <div class="form-group">
+                                <label for="burnFrom">From Address</label>
+                                <input type="text" id="burnFrom" placeholder="0x..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="burnAmount">Amount (gNGN)</label>
+                                <div class="amount-input-wrapper">
+                                    <input type="number" id="burnAmount" step="0.000000000000000001" placeholder="0.0" required>
+                                    <span class="currency-suffix">gNGN</span>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-danger btn-block">Burn Tokens</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Blacklist Section -->
+                <section class="card feature-card">
+                    <div class="card-header">
+                        <h3>Blacklist Management</h3>
+                        <div class="card-tag governor-tag">Governor Only</div>
+                    </div>
+                    <div class="card-body">
+                        <form id="blacklistForm">
+                            <div class="form-group">
+                                <label for="blacklistAddress">Address</label>
+                                <input type="text" id="blacklistAddress" placeholder="0x..." required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" id="blacklistBtn" class="btn btn-danger">Blacklist</button>
+                                <button type="submit" id="unblacklistBtn" class="btn btn-success">Unblacklist</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Admin Only Sections -->
+            <div id="adminSections" class="admin-sections hidden">
+                <!-- Role Management Section -->
+                <section class="card feature-card">
+                    <div class="card-header">
+                        <h3>Role Management</h3>
+                        <div class="card-tag admin-tag">Admin Only</div>
+                    </div>
+                    <div class="card-body">
+                        <form id="roleForm">
+                            <div class="form-group">
+                                <label for="roleId">Role ID (bytes32)</label>
+                                <input type="text" id="roleId" placeholder="0x..." required>
+                                <small>Common roles: GOVERNOR_ROLE, ADMIN_ROLE</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="roleAddress">Address</label>
+                                <input type="text" id="roleAddress" placeholder="0x..." required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="grantRoleBtn" class="btn btn-success">Grant Role</button>
+                                <button type="button" id="revokeRoleBtn" class="btn btn-danger">Revoke Role</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="g-naira-icon.png" alt="G-Naira Logo" class="logo">
+                    <p>G-Naira Token Interface</p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://sepolia.etherscan.io/address/0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c" target="_blank" class="footer-link">Contract</a>
+                    <a href="https://github.com/VicTorQuest/gNaira" target="_blank" class="footer-link">GitHub</a>
+                    <a href="https://sepolia.etherscan.io/token/0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c" target="_blank" class="footer-link">Token</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 G-Naira. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Add Token Modal -->
+   <div id="addTokenModal" class="modal hidden">
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Add G-NGN Token to MetaMask</h3>
@@ -88,174 +355,6 @@
                     <button class="btn btn-secondary" onclick="closeAddTokenModal()">Close</button>
                 </div>
             </div>
-        </div>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-container">
-                <img src="g-naira-icon.png" alt="G-Naira Logo" class="logo">
-                <h1>G-Naira Token Interface</h1>
-            </div>
-            <div class="network-info">
-                <span id="networkStatus">Not Connected</span>
-            </div>
-        </header>
-
-        <!-- Wallet Connection -->
-        <section class="wallet-section">
-            <button id="connectWallet" class="btn btn-primary">Connect MetaMask</button>
-            <div id="walletInfo" class="wallet-info hidden">
-                <p><strong>Connected Account:</strong> <span id="accountAddress"></span></p>
-                <p><strong>G-NGN Balance:</strong> <span id="tokenBalance">0</span> gNGN</p>
-                <div class="wallet-actions">
-                    <button id="refreshBalance" class="btn btn-secondary">Refresh Balance</button>
-                    <button id="addToMetaMask" class="btn btn-success">Add G-NGN to MetaMask</button>
-                </div>
-            </div>
-        </section>
-
-        <div id="faucetSection" class="faucet-section hidden">
-            <h2>Get Free G-NGN Tokens!</h2>
-            <p>Click the button below to receive 10 G-NGN tokens.</p>
-            <button id="requestTokens" class="btn btn-success">Request Tokens</button>
-            <p id="transactionStatus"></p>
-        </div>
-
-        <!-- Status Messages -->
-        <div id="statusMessage" class="status-message hidden"></div>
-
-        <!-- Main Interface -->
-        <div id="mainInterface" class="main-interface hidden">
-            
-            <!-- Transfer Section -->
-            <section class="card">
-                <h2>Transfer Tokens</h2>
-                <form id="transferForm">
-                    <div class="form-group">
-                        <label for="transferRecipient">Recipient Address:</label>
-                        <input type="text" id="transferRecipient" placeholder="0x..." required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transferAmount">Amount (gNGN):</label>
-                        <input type="number" id="transferAmount" step="0.000000000000000001" placeholder="0.0" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send</button>
-                </form>
-            </section>
-
-            <!-- Transfer From Section -->
-            <!-- <section class="card">
-                <h2>Transfer From</h2>
-                <form id="transferFromForm">
-                    <div class="form-group">
-                        <label for="transferFromOwner">Owner Address:</label>
-                        <input type="text" id="transferFromOwner" placeholder="0x..." required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transferFromSpender">Spender Address:</label>
-                        <input type="text" id="transferFromSpender" placeholder="0x..." required>
-                    </div>
-                    <div class="form-group">
-                        <label for="transferFromAmount">Amount (gNGN):</label>
-                        <input type="number" id="transferFromAmount" step="0.000000000000000001" placeholder="0.0" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send From</button>
-                </form>
-            </section> -->
-
-            <!-- Approve Section -->
-            <!-- <section class="card">
-                <h2>Approve Allowance</h2>
-                <form id="approveForm">
-                    <div class="form-group">
-                        <label for="approveSpender">Spender Address:</label>
-                        <input type="text" id="approveSpender" placeholder="0x..." required>
-                    </div>
-                    <div class="form-group">
-                        <label for="approveAmount">Amount (gNGN):</label>
-                        <input type="number" id="approveAmount" step="0.000000000000000001" placeholder="0.0" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Approve</button>
-                </form>
-            </section> -->
-
-            <!-- Governor Only Sections -->
-            <div id="governorSections" class="governor-sections hidden">
-                
-                <!-- Mint Section -->
-                <section class="card">
-                    <h2>Mint Tokens (Governor Only)</h2>
-                    <form id="mintForm">
-                        <div class="form-group">
-                            <label for="mintTo">Mint To Address:</label>
-                            <input type="text" id="mintTo" placeholder="0x..." required>
-                        </div>
-                        <div class="form-group">
-                            <label for="mintAmount">Amount (gNGN):</label>
-                            <input type="number" id="mintAmount" step="0.000000000000000001" placeholder="0.0" required>
-                        </div>
-                        <button type="submit" class="btn btn-success">Mint</button>
-                    </form>
-                </section>
-                <br>
-
-                <!-- Burn Section -->
-                <section class="card">
-                    <h2>Burn Tokens (Governor Only)</h2>
-                    <form id="burnForm">
-                        <div class="form-group">
-                            <label for="burnFrom">Burn From Address:</label>
-                            <input type="text" id="burnFrom" placeholder="0x..." required>
-                        </div>
-                        <div class="form-group">
-                            <label for="burnAmount">Amount (gNGN):</label>
-                            <input type="number" id="burnAmount" step="0.000000000000000001" placeholder="0.0" required>
-                        </div>
-                        <button type="submit" class="btn btn-danger">Burn</button>
-                    </form>
-                </section>
-
-                <br>
-
-                <!-- Blacklist Section -->
-                <section class="card">
-                    <h2>Blacklist Management (Governor Only)</h2>
-                    <form id="blacklistForm">
-                        <div class="form-group">
-                            <label for="blacklistAddress">Address:</label>
-                            <input type="text" id="blacklistAddress" placeholder="0x..." required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" id="blacklistBtn" class="btn btn-danger">Blacklist</button>
-                            <button type="button" id="unblacklistBtn" class="btn btn-success">Unblacklist</button>
-                        </div>
-                    </form>
-                </section>
-            </div>
-
-            <!-- Admin Only Sections -->
-            <div id="adminSections" class="admin-sections hidden">
-                <!-- Role Management Section -->
-                <section class="card">
-                    <h2>Role Management (Admin Only)</h2>
-                    <form id="roleForm">
-                        <div class="form-group">
-                            <label for="roleId">Role ID (bytes32):</label>
-                            <input type="text" id="roleId" placeholder="0x..." required>
-                            <small>Common roles: GOVERNOR, ADMIN_ROLE</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="roleAddress">Address:</label>
-                            <input type="text" id="roleAddress" placeholder="0x..." required>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" id="grantRoleBtn" class="btn btn-success">Grant Role</button>
-                            <button type="button" id="revokeRoleBtn" class="btn btn-danger">Revoke Role</button>
-                        </div>
-                    </form>
-                </section>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.10.0/ethers.umd.min.js"></script>

@@ -1,3 +1,91 @@
+// Toast notification system
+let toastCounter = 0
+
+function showToast(message, type = "info", title = null, duration = 5000) {
+  const toastContainer = document.getElementById("toastContainer")
+  const toastId = `toast-${++toastCounter}`
+
+  // Determine title and icon based on type
+  const titles = {
+    success: title || "Success",
+    error: title || "Error",
+    info: title || "Information",
+    warning: "Warning",
+  }
+
+  const icons = {
+    success: "✓",
+    error: "✕",
+    info: "i",
+    warning: "!",
+  }
+
+  const toast = document.createElement("div")
+  toast.className = `toast ${type}`
+  toast.id = toastId
+  toast.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">
+            <div class="toast-title">${titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <div class="toast-close" onclick="removeToast('${toastId}')">&times;</div>
+        <div class="toast-progress"></div>
+    `
+
+  toastContainer.appendChild(toast)
+
+  // Auto remove after duration (except for error messages)
+  if (type !== "error" && duration > 0) {
+    setTimeout(() => {
+      removeToast(toastId)
+    }, duration)
+  }
+
+  return toastId
+}
+
+function removeToast(toastId) {
+  const toast = document.getElementById(toastId)
+  if (toast) {
+    toast.style.animation = "slideOutToast 0.3s ease-out forwards"
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast)
+      }
+    }, 300)
+  }
+}
+
+// Loading overlay functions
+function showLoading(message = "Processing...") {
+  const overlay = document.getElementById("loadingOverlay")
+  const loadingText = document.getElementById("loadingText")
+  loadingText.textContent = message
+  overlay.classList.remove("hidden")
+}
+
+function hideLoading() {
+  const overlay = document.getElementById("loadingOverlay")
+  overlay.classList.add("hidden")
+}
+
+// Button state management
+function setButtonLoading(button, isLoading = true) {
+  if (isLoading) {
+    button.classList.add("loading")
+    button.disabled = true
+    button.dataset.originalText = button.textContent
+  } else {
+    button.classList.remove("loading")
+    button.disabled = false
+    if (button.dataset.originalText) {
+      button.textContent = button.dataset.originalText
+    }
+  }
+}
+
+
 // Configuration
 const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111 in hex
 const CONTRACT_ADDRESS = '0x4215b1AccC0cEb03B8EED6C07839Fa3D0B32235c';
@@ -43,16 +131,16 @@ const mainInterface = document.getElementById('mainInterface');
 const networkStatus = document.getElementById('networkStatus');
 const governorSections = document.getElementById('governorSections');
 const adminSections = document.getElementById('adminSections');
+const transferBtn = document.getElementById('transferBtn');
 
-console.log(window.ethereum)
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Load ABI from abi.json
-        showStatus('Loading contract ABI...', 'info');
+        showToast('Loading contract ABI...', 'info');
         await loadContractABI();
-        showStatus('ABI Loaded successfully', 'success');
+        showToast('ABI Loaded successfully', 'success');
         
         // Check if MetaMask is installed
         if (typeof window.ethereum !== 'undefined') {
@@ -68,13 +156,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.ethereum.on('accountsChanged', handleAccountsChanged);
             window.ethereum.on('chainChanged', handleChainChanged);
         } else {
-            showStatus('MetaMask not detected. Please install MetaMask to use this application.', 'error');
+            showToast('MetaMask not detected. Please install MetaMask to use this application.', 'error');
         }
         
         setupEventListeners();
     } catch (error) {
         console.error('Failed to initialize application:', error);
-        showStatus(`Failed to load application: ${error.message}`, 'error');
+        showToast(`Failed to load application: ${error.message}`, 'error');
     }
 });
 
@@ -116,7 +204,12 @@ function setupEventListeners() {
 // Connect to MetaMask wallet
 async function connectWallet() {
     try {
-        showStatus('Connecting to MetaMask...', 'info');
+        if (!CONTRACT_ABI) {
+            throw new Error("Contract ABI not loaded. Please refresh the page.")
+        }
+
+        setButtonLoading(connectWalletBtn, true)
+        showLoading("Connecting to MetaMask...")
         
         // Request account access
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -128,7 +221,8 @@ async function connectWallet() {
         // Check network
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         if (chainId !== SEPOLIA_CHAIN_ID) {
-            await switchToSepolia();
+            showLoading("Switching to Sepolia network...")
+            await switchToSepolia()
         }
         
         // Initialize ethers
@@ -138,6 +232,8 @@ async function connectWallet() {
         
         // Initialize contract
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        setButtonLoading(connectWalletBtn, false)
         
         // Update UI
         accountAddress.textContent = userAccount;
@@ -151,14 +247,19 @@ async function connectWallet() {
         // document.getElementById('transferFromSpender').value = userAccount;
         
         // Load balance and check roles
-        await refreshBalance();
-        await checkUserRoles();
+        showLoading("Loading account information...")
+        await refreshBalance()
+        await checkUserRoles()
+
+        hideLoading()
         
-        showStatus('Successfully connected to MetaMask!', 'success');
+        showToast('Successfully connected to MetaMask!', 'success');
         
     } catch (error) {
         console.error('Error connecting wallet:', error);
-        showStatus(`Failed to connect: ${error.message}`, 'error');
+        setButtonLoading(connectWalletBtn, false)
+        showToast(`Failed to connect: ${error.message}`, 'error');
+    } finally {
     }
 }
 
@@ -188,9 +289,11 @@ async function switchToSepolia() {
                     }]
                 });
             } catch (addError) {
-                throw new Error('Failed to add Sepolia network');
+                showToast("Failed to add Sepolia network to MetaMask.", "error")
+                throw new Error('Failed to add Sepolia network', addError);
             }
         } else {
+            showToast("Failed to switch to Sepolia network.", "error")
             throw switchError;
         }
     }
@@ -200,14 +303,25 @@ async function switchToSepolia() {
 async function refreshBalance() {
     try {
         if (!contract || !userAccount) return;
+
+        if (refreshBalanceBtn) {
+            setButtonLoading(refreshBalanceBtn, true)
+        }
         
         const balance = await contract.balanceOf(userAccount);
         const formattedBalance = ethers.formatUnits(balance, 18);
         tokenBalance.textContent = parseFloat(formattedBalance).toFixed(6);
+
+
+        if (refreshBalanceBtn) {
+            showToast("Balance updated successfully", "success", null, 2000)
+        }
         
     } catch (error) {
         console.error('Error fetching balance:', error);
-        showStatus(`Failed to fetch balance: ${error.message}`, 'error');
+        showToast(`Failed to fetch balance: ${error.message}`, 'error');
+    } finally {
+        setButtonLoading(refreshBalanceBtn, false)
     }
 }
 
@@ -353,10 +467,10 @@ async function copyToClipboard(elementId) {
       copyBtn.classList.remove("copied")
     }, 2000)
 
-    showStatus("Copied to clipboard!", "success")
+    showToast("Copied to clipboard!", "success")
   } catch (error) {
     console.error("Failed to copy text:", error)
-    showStatus("Failed to copy. Please select and copy manually.", "error")
+    showToast("Failed to copy. Please select and copy manually.", "error")
   }
 }
 
@@ -374,15 +488,17 @@ async function handleTransfer(event) {
             throw new Error('Please fill in all fields');
         }
         
-        showStatus('Processing transfer...', 'info');
+        setButtonLoading(transferBtn, true)
+        showLoading("Preparing transfer...")
         
         const amountWei = ethers.parseUnits(amount, 18);
         const tx = await contract.transfer(recipient, amountWei);
         
-        showStatus('Transaction submitted. Waiting for confirmation...', 'info');
+        showLoading("Transaction submitted. Waiting for confirmation...")
         await tx.wait();
         
-        showStatus(`Successfully transferred ${amount} gNGN to ${recipient}`, 'success');
+        hideLoading()
+        showToast(`Successfully transferred ${amount} gNGN to ${recipient}`, "success")
         await refreshBalance();
         
         // Clear form
@@ -390,7 +506,10 @@ async function handleTransfer(event) {
         
     } catch (error) {
         console.error('Transfer error:', error);
-        showStatus(`Transfer failed: ${error.message}`, 'error');
+        hideLoading()
+        showToast(`Transfer failed: ${error.message}`, "error")
+    } finally {
+        setButtonLoading(transferBtn, false)
     }
 }
 
@@ -462,6 +581,8 @@ async function handleTransfer(event) {
 // Handle mint (governor only)
 async function handleMint(event) {
     event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]')
     
     try {
         const to = document.getElementById('mintTo').value;
@@ -471,15 +592,17 @@ async function handleMint(event) {
             throw new Error('Please fill in all fields');
         }
         
-        showStatus('Processing mint...', 'info');
+        setButtonLoading(submitBtn, true)
+        showLoading("Preparing mint transaction...")
         
         const amountWei = ethers.parseUnits(amount, 18);
         const tx = await contract.mint(to, amountWei);
         
-        showStatus('Transaction submitted. Waiting for confirmation...', 'info');
+        showLoading("Transaction submitted. Waiting for confirmation...")
         await tx.wait();
         
-        showStatus(`Successfully minted ${amount} gNGN to ${to}`, 'success');
+        hideLoading()
+        showToast(`Successfully minted ${amount} gNGN to ${to}`, "success")
         await refreshBalance();
         
         // Clear form
@@ -487,13 +610,18 @@ async function handleMint(event) {
         
     } catch (error) {
         console.error('Mint error:', error);
-        showStatus(`Mint failed: ${error.message}`, 'error');
+        hideLoading()
+        showToast(`Minting failed: ${error.message}`, "error")
+    } finally {
+        setButtonLoading(submitBtn, false)
     }
 }
 
 // Handle burn (governor only)
 async function handleBurn(event) {
     event.preventDefault();
+
+    const submitBtn = event.target.querySelector('button[type="submit"]')
     
     try {
         const from = document.getElementById('burnFrom').value;
@@ -503,15 +631,17 @@ async function handleBurn(event) {
             throw new Error('Please fill in all fields');
         }
         
-        showStatus('Processing burn...', 'info');
+        setButtonLoading(submitBtn, true)
+        showLoading("Preparing burn transaction...")
         
         const amountWei = ethers.parseUnits(amount, 18);
         const tx = await contract.burn(from, amountWei);
         
-        showStatus('Transaction submitted. Waiting for confirmation...', 'info');
+        showLoading("Transaction submitted. Waiting for confirmation...")
         await tx.wait();
         
-        showStatus(`Successfully burned ${amount} gNGN from ${from}`, 'success');
+        hideLoading()
+        showToast(`Successfully burned ${amount} gNGN from ${from}`, "success")
         await refreshBalance();
         
         // Clear form
@@ -519,12 +649,17 @@ async function handleBurn(event) {
         
     } catch (error) {
         console.error('Burn error:', error);
-        showStatus(`Burn failed: ${error.message}`, 'error');
+        hideLoading()
+        showToast(`Burning failed: ${error.message}`, "error")
+    } finally {
+        setButtonLoading(submitBtn, false)
     }
 }
 
 // Handle blacklist/unblacklist (governor only)
 async function handleBlacklist(isBlacklist) {
+    event.preventDefault()
+
     try {
         const address = document.getElementById('blacklistAddress').value;
         
@@ -532,29 +667,53 @@ async function handleBlacklist(isBlacklist) {
             throw new Error('Please enter an address');
         }
         
-        const action = isBlacklist ? 'blacklisting' : 'unblacklisting';
-        showStatus(`Processing ${action}...`, 'info');
+
+        if (isBlacklist) {
+            action = 'blacklisting'
+            submitBtn = document.getElementById('blacklistBtn')
+        } else {
+            action = 'unblacklisting'
+            submitBtn = document.getElementById('unblacklistBtn')
+        }
+
+        setButtonLoading(submitBtn, true)
+        
+        showLoading("Preparing blacklist transaction...")
         
         const tx = isBlacklist 
             ? await contract.blacklistAddress(address)
             : await contract.unblacklistAddress(address);
         
-        showStatus('Transaction submitted. Waiting for confirmation...', 'info');
+        showLoading("Transaction submitted. Waiting for confirmation...")
         await tx.wait();
         
-        showStatus(`Successfully ${action.slice(0, -3)}ed ${address}`, 'success');
-        
+        hideLoading()
+        showToast(`Successfully ${action.slice(0, -3)}ed ${address}`, "success")
+                
         // Clear form
         document.getElementById('blacklistAddress').value = '';
         
     } catch (error) {
         console.error('Blacklist error:', error);
-        showStatus(`Blacklist operation failed: ${error.message}`, 'error');
+        hideLoading()
+        showToast(`Blacklist operation failed: ${error.message}`, "error")
+    } finally {
+        setButtonLoading(submitBtn, false)
     }
 }
 
 // Handle role management (admin only)
 async function handleRoleManagement(isGrant) {
+    event.preventDefault()
+
+    let submitBtn;
+
+    if (isGrant) {
+        submitBtn = document.getElementById('grantRoleBtn');
+    } else {
+        submitBtn = document.getElementById('revokeRoleBtn');
+    }
+
     try {
         const roleId = document.getElementById('roleId').value;
         const address = document.getElementById('roleAddress').value;
@@ -564,23 +723,28 @@ async function handleRoleManagement(isGrant) {
         }
         
         const action = isGrant ? 'granting' : 'revoking';
-        showStatus(`Processing role ${action}...`, 'info');
+        setButtonLoading(submitBtn, true)
+        showLoading("Preparing role management transaction...")
         
         const tx = isGrant 
             ? await contract.grantRole(roleId, address)
             : await contract.revokeRole(roleId, address);
         
-        showStatus('Transaction submitted. Waiting for confirmation...', 'info');
+        showLoading("Transaction submitted. Waiting for confirmation...")
         await tx.wait();
         
-        showStatus(`Successfully ${action.slice(0, -3)}ed role for ${address}`, 'success');
+        hideLoading()
+        showToast(`Successfully ${action.slice(0, -3)}ed role for ${address}`, 'success');
         
         // Clear form
         document.getElementById('roleForm').reset();
         
     } catch (error) {
         console.error('Role management error:', error);
-        showStatus(`Role management failed: ${error.message}`, 'error');
+        hideLoading()
+        showToast(`Role management failed: ${error.message}`, "error")
+    } finally {
+        setButtonLoading(submitBtn, false)
     }
 }
 
@@ -601,19 +765,6 @@ function handleChainChanged(chainId) {
     location.reload();
 }
 
-// Show status message
-function showStatus(message, type) {
-    statusMessage.textContent = message;
-    statusMessage.className = `status-message ${type}`;
-    statusMessage.classList.remove('hidden');
-    
-    // Auto-hide success messages after 5 seconds
-    if (type === 'success') {
-        setTimeout(() => {
-            statusMessage.classList.add('hidden');
-        }, 5000);
-    }
-}
 
 // Utility function to format address for display
 function formatAddress(address) {

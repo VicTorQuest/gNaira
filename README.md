@@ -16,7 +16,7 @@ G-Naira (gNGN) is a digital version of the national currency built on the blockc
 
 <p align="center">
   <img
-    src="https://i.ibb.co/7xFBYKLz/Screenshot-2025-05-26-at-14-35-26.png"
+    src="./landing-page.png"
     alt="G-Naira Live App Screenshot"
     style="width: 100%; height: auto;"
   />
@@ -41,12 +41,12 @@ G-Naira (gNGN) is a digital version of the national currency built on the blockc
 
 <p align="center">
   <img
-    src="https://i.ibb.co/LzYp3D1T/Screenshot-2025-05-26-at-15-05-36.png"
+    src="./transfer.png"
     alt="Governor Actions - Role Management"
     style="width: 100%; height: auto; margin-right: 10px;"
   />
   <img
-    src="https://i.ibb.co/kV1R0H3d/Screenshot-2025-05-26-at-15-06-09.png"
+    src="./mint-burn.png"
     alt="Admin Actions - Role Assignment"
     style="width: 100%; height: auto;"
   />
@@ -74,7 +74,7 @@ G-Naira (gNGN) is a digital version of the national currency built on the blockc
 
 <p align="center">
   <img
-    src="https://i.ibb.co/Z1NGn2kj/Screenshot-2025-05-26-at-15-00-40.png"
+    src="./role-management.png"
     alt="Transactions Executed Screenshot"
     style="width: 100%; height: auto;"
   />
